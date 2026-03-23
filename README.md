@@ -1,3 +1,10 @@
+# Location of this repo
+/ros2_ws/src/drone_racing_ros2
+
+
+
+
+
 # `drone_racing_ros2`
 
 ## Running a Tello simulation in [Gazebo](http://gazebosim.org/)
