@@ -10,16 +10,25 @@ class DroneController(Node):
 
     def __init__(self):
 
-        #Init ros class thingy
+        #Initialize ros class thingy
         super().__init__('drone_controller')
-
-        #TelloAction service client
-        self.cli = self.create_client(TelloAction, 'tello_action')
-        #cmd_vel publisher
-        self.vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
-        #TelloAction response subscriber
-        self.response_subscriber = self.create_subscription(TelloResponse, "tello_response", self.command_response_callback, 1)
         
+        is_in_gazebo = True
+
+        if is_in_gazebo: #Gazebo
+            #TelloAction service client
+            self.cli = self.create_client(TelloAction, 'drone1/tello_action')
+            #cmd_vel publisher
+            self.vel_publisher = self.create_publisher(Twist, "drone1/cmd_vel", 1)
+            #TelloAction response subscriber
+            self.response_subscriber = self.create_subscription(TelloResponse, "drone1/tello_response", self.command_response_callback, 1)
+        else: #Real drone
+            #TelloAction service client
+            self.cli = self.create_client(TelloAction, 'tello_action')
+            #cmd_vel publisher
+            self.vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
+            #TelloAction response subscriber
+            self.response_subscriber = self.create_subscription(TelloResponse, "tello_response", self.command_response_callback, 1)
         #Takeoff and landing flags
         self.takeoff_complete: bool = False
         self.landing: bool = False
@@ -56,9 +65,15 @@ class DroneController(Node):
         self.i += 1
 
         #Code here :)
-        
+        match self.i:
+            case 5: self.move_forward()
+            case 10: self.move_backward()
+            case 13: self.stop()
+            case 40: self.turn_left()
+            case 80: self.land()
 
-    def move(self, forward: int = 0, left: int = 0, up: int = 0):
+
+    def move(self, forward: float = 0.0, left: float = 0.0, float: int = 0.0):
         msg = Twist()
         msg.linear.x = forward
         msg.linear.y = left
@@ -102,11 +117,23 @@ class DroneController(Node):
     
     def zero_velocity(self):
         msg = Twist()
-        msg.linear.x = 0
-        msg.linear.y = 0
-        msg.linear.z = 0
+        msg.linear.x = 0.0
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         self.vel_publisher.publish(msg)
         self.get_logger().info("Velocity Reset")
+    
+    def turn_left(self):
+        msg = Twist()
+        msg.angular.z = 1.0
+        self.vel_publisher.publish(msg)
+        self.get_logger().info("Turn Left")
+    
+    def turn_right(self):
+        msg = Twist()
+        msg.angular.z = -1.0
+        self.vel_publisher.publish(msg)
+        self.get_logger().info("Turn Right")
     
     def land(self):
         self.stop()
