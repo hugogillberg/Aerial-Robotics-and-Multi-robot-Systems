@@ -26,12 +26,9 @@ class GateAnalyzer(Node):
         self.gate_publisher = self.create_publisher(GateTarget, "target", 1)
         #TelloAction response subscriber - use absolute topic path
         self.response_subscriber = self.create_subscription(DetectionArray, "yolo/tracking", self.detection_callback, custom_qos)
-        print(f"Init done - Subscribed to topic: {self.response_subscriber.topic_name}")
-        print(f"Node name: {self.get_name()}")
     
 
     def detection_callback(self, msg):
-        print("Detection Callback")
         detections: list[Detection] = msg.detections
         if detections == False:
             return
