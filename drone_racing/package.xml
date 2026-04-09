@@ -13,6 +13,8 @@
   <depend>std_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>tello_msgs</depend>
+  <depend>drone_racing_msgs</depend>
+  <depend>yolo_import</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

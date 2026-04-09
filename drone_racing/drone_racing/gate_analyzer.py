@@ -13,7 +13,7 @@ class GateAnalyzer(Node):
 
         #Initialize ros class thingy
         super().__init__('gate_analyzer')
-
+        print("Starting Gate analyzer")
         #cmd_vel publisher
         self.gate_publisher = self.create_publisher(GateTarget, "target", 1)
         #TelloAction response subscriber
