@@ -5,6 +5,14 @@ from geometry_msgs.msg import Twist
 import time
 from tello_msgs.srv import TelloAction
 from tello_msgs.msg import TelloResponse
+from drone_racing_msgs.msg import GateTarget
+from enum import Enum
+
+class States(Enum):
+    SEARCHING = 0
+    CENTERING = 1
+    MOVING = 2
+    STOPPING = 3
 
 class DroneController(Node):
 
@@ -29,6 +37,8 @@ class DroneController(Node):
             self.vel_publisher = self.create_publisher(Twist, "cmd_vel", 1)
             #TelloAction response subscriber
             self.response_subscriber = self.create_subscription(TelloResponse, "tello_response", self.command_response_callback, 1)
+            #GateTarget response subscriber
+            self.gate_subscriber = self.create_subscription(GateTarget, "tello_response", self.gate_callback, 1)
         #Takeoff and landing flags
         self.takeoff_complete: bool = False
         self.landing: bool = False
@@ -39,6 +49,11 @@ class DroneController(Node):
         
         #Tick counter
         self.i: int = 0
+        
+        #Detected gate
+        self.gate: GateTarget
+        #State machine
+        self.state = States.SEARCHING
 
         #Wait for drone to be ready
         while not self.cli.wait_for_service(timeout_sec=1.0):
@@ -64,16 +79,10 @@ class DroneController(Node):
             return
         self.i += 1
 
-        #Code here :)
-        match self.i:
-            case 5: self.move_forward()
-            case 10: self.move_backward()
-            case 13: self.stop()
-            case 40: self.turn_left()
-            case 80: self.land()
+        self.handle_state_machine()
 
 
-    def move(self, forward: float = 0.0, left: float = 0.0, float: int = 0.0):
+    def move(self, forward: float = 0.0, left: float = 0.0, up: int = 0.0):
         msg = Twist()
         msg.linear.x = forward
         msg.linear.y = left
@@ -172,6 +181,54 @@ class DroneController(Node):
                 case "land":
                     self.get_logger().info("Landing complete.")
         self.sending_command = False
+    
+    def gate_callback(self, msg: GateTarget):
+        self.gate = msg
+
+
+    ##################################################################################################################
+    #State Machine
+    ##################################################################################################################
+    def handle_state_machine(self):
+        match States:
+            case States.SEARCHING:  self.searching()
+            case States.CENTERING:  self.centering()
+            case States.MOVING:     self.moving()
+            case States.STOPPING:   self.stopping()
+    
+
+    def searching(self):
+        self.turn_right()
+        if self.gate:
+            self.state = States.CENTERING
+
+
+    def centering(self):
+        #0,0 is upper left
+        camera_size_x = 960
+        camera_size_y = 720
+        offset_y = 250
+        error_x = (camera_size_x / 2) - self.gate.x
+        error_y = (camera_size_y / 2 - offset_y) - self.gate.y
+        x = 0
+        y = 0
+        if error_x > 20:
+            x = -0.5
+        elif error_x < -20:
+            x = 0.5
+        elif error_y > 20:
+            y = -0.5
+        elif error_y < -20:
+            y = 0.5
+        else:
+            self.zero_velocity()
+            self.stop()
+        self.move(0, x, y)
+
+    def moving(self):
+        pass
+    def stopping(self):
+        pass
 
 
 def main(args=None):
