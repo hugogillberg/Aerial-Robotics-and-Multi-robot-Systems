@@ -4,7 +4,7 @@
 int32 id
 
 # 2D point in pixels
-yolo_msgs/Point2D point
+yolo_import/Point2D point
 
 # conf of the keypoint
 float64 score

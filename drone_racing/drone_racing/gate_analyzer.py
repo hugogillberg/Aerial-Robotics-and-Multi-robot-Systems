@@ -1,9 +1,9 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.timer import Timer
-from yolo_msgs.msg import DetectionArray
-from yolo_msgs.msg import Detection
-from yolo_msgs.msg import BoundingBox2D
+from yolo_import.msg import DetectionArray
+from yolo_import.msg import Detection
+from yolo_import.msg import BoundingBox2D
 from drone_racing_msgs.msg import GateTarget
 import time
 

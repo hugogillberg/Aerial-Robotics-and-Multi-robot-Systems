@@ -9,17 +9,17 @@ float64 score
 string id
 
 # 2D bounding box surrounding the object in pixels
-yolo_msgs/BoundingBox2D bbox
+yolo_import/BoundingBox2D bbox
 
 # 3D bounding box surrounding the object in meters
-yolo_msgs/BoundingBox3D bbox3d
+yolo_import/BoundingBox3D bbox3d
 
 # segmentation mask of the detected object
 # it is only the boundary of the segmented object
-yolo_msgs/Mask mask
+yolo_import/Mask mask
 
 # keypoints for human pose estimation
-yolo_msgs/KeyPoint2DArray keypoints
+yolo_import/KeyPoint2DArray keypoints
 
 # keypoints for human pose estimation
-yolo_msgs/KeyPoint3DArray keypoints3d
+yolo_import/KeyPoint3DArray keypoints3d
