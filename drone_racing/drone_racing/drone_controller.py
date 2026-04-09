@@ -13,7 +13,7 @@ class DroneController(Node):
         #Initialize ros class thingy
         super().__init__('drone_controller')
         
-        is_in_gazebo = True
+        is_in_gazebo = False
 
         if is_in_gazebo: #Gazebo
             #TelloAction service client
