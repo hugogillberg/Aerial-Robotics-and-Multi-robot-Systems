@@ -1,11 +1,12 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.timer import Timer
-from yolo_import.msg import DetectionArray
-from yolo_import.msg import Detection
-from yolo_import.msg import BoundingBox2D
+from yolo_msgs.msg import DetectionArray
+from yolo_msgs.msg import Detection
+from yolo_msgs.msg import BoundingBox2D
 from drone_racing_msgs.msg import GateTarget
 import time
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, QoSPresetProfiles
 
 class GateAnalyzer(Node):
 
@@ -14,22 +15,34 @@ class GateAnalyzer(Node):
         #Initialize ros class thingy
         super().__init__('gate_analyzer')
         print("Starting Gate analyzer")
+        
+        custom_qos = QoSProfile(
+            depth=10,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE
+        )
+
         #cmd_vel publisher
         self.gate_publisher = self.create_publisher(GateTarget, "target", 1)
-        #TelloAction response subscriber
-        self.response_subscriber = self.create_subscription(DetectionArray, "yolo/detections", self.detection_callback, 1)
+        #TelloAction response subscriber - use absolute topic path
+        self.response_subscriber = self.create_subscription(DetectionArray, "yolo/tracking", self.detection_callback, custom_qos)
+        print(f"Init done - Subscribed to topic: {self.response_subscriber.topic_name}")
+        print(f"Node name: {self.get_name()}")
     
 
-    def detection_callback(self, msg: DetectionArray):
+    def detection_callback(self, msg):
+        print("Detection Callback")
         detections: list[Detection] = msg.detections
-        
+        if detections == False:
+            return
+
         gates: list[GateTarget] = []
         for item in detections:
             bounding_box: BoundingBox2D = item.bbox
             class_name: str = item.class_name
-            size: int = bounding_box.size.x
-            position_x: int = bounding_box.center.position.x
-            position_y: int = bounding_box.center.position.y
+            size: int = int(bounding_box.size.x)
+            position_x: int = int(bounding_box.center.position.x)
+            position_y: int = int(bounding_box.center.position.y)
 
             gate_target = GateTarget()
             gate_target.class_name = class_name
@@ -47,6 +60,7 @@ class GateAnalyzer(Node):
                 biggest = gate_target.size
                 biggest_gate = gate_target
         
+        self.get_logger().info(f"Biggest Gate {biggest_gate}")
         self.gate_publisher.publish(biggest_gate)
 
 
