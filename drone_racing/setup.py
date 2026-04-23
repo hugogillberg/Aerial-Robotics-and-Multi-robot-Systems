@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'drone_test = drone_racing.controller_node:main',
+            'drone_controller = drone_racing.drone_controller:main',
             'video_converter = drone_racing.video_converter:main',
             'gate_analyzer = drone_racing.gate_analyzer:main',
         ],

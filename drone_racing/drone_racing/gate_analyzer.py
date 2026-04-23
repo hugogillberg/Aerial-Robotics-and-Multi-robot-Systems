@@ -24,6 +24,7 @@ class GateAnalyzer(Node):
 
         #cmd_vel publisher
         self.gate_publisher = self.create_publisher(GateTarget, "target", 1)
+        self.stop_publisher = self.create_publisher(GateTarget, "stop", 1)
         #TelloAction response subscriber - use absolute topic path
         self.response_subscriber = self.create_subscription(DetectionArray, "yolo/tracking", self.detection_callback, custom_qos)
     
@@ -34,6 +35,7 @@ class GateAnalyzer(Node):
             return
 
         gates: list[GateTarget] = []
+        stop: GateTarget = None
         for item in detections:
             bounding_box: BoundingBox2D = item.bbox
             class_name: str = item.class_name
@@ -47,18 +49,26 @@ class GateAnalyzer(Node):
             gate_target.x = position_x
             gate_target.y = position_y
 
-            gates.append(gate_target)
+            # Seperate to gates and stio
+            if gate_target.class_name == "Gate":
+                gates.append(gate_target)
+            else:
+                stop = gate_target
         
         #Check biggest size
-        biggest: int = 0
+        biggest: int = 100
         biggest_gate = GateTarget()
         for gate_target in gates:
             if gate_target.size > biggest:
                 biggest = gate_target.size
                 biggest_gate = gate_target
         
-        self.get_logger().info(f"Biggest Gate {biggest_gate}")
-        self.gate_publisher.publish(biggest_gate)
+        if len(gates) > 0:
+            self.get_logger().info(f"Biggest Gate {biggest_gate}")
+            self.gate_publisher.publish(biggest_gate)
+        if stop != None:
+            self.get_logger().info(f"Stop {stop}")
+            self.stop_publisher.publish(stop)
 
 
 def main(args=None):
