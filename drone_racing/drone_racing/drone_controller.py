@@ -70,11 +70,13 @@ class DroneController(Node):
         self.gate_max_lose_time: int = 30
         self.gate_counter: int = 0
         self.stop: GateTarget | None = None
+        self.stop_lose_timer: int = 0
+        self.stop_max_lose_time: int = 30
 
         # PID controller
         self.pid_altitude_gate = PID(0.002, 0.0, 0.0, setpoint=235, output_limits=(-1.0, 1.0))
         self.pid_altitude_tof = PID(0.02, 0.0, 0.0, setpoint=110, output_limits=(-1.0, 1.0))
-        self.pid_rotation = PID(0.002, 0.0, 0.0, setpoint=480, output_limits=(-1.0, 1.0))
+        self.pid_rotation = PID(0.0015, 0.0, 0.0, setpoint=480, output_limits=(-1.0, 1.0))
 
         
         #State machine
@@ -168,12 +170,15 @@ class DroneController(Node):
         self.tof = msg.tof
 
     def gate_callback(self, msg: GateTarget):
+        if (self.gate_counter == 2 and msg.size < 250):
+            return
         self.gate = msg
         self.gate_timer = 0
         self.centered_ticks += 1
     
     def stop_callback(self, msg: GateTarget):
         self.stop = msg
+        self.stop_lose_timer = 0
 
 
     ##################################################################################################################
@@ -238,7 +243,7 @@ class DroneController(Node):
         self.get_logger().info(f"horizonal ok: {abs(offset_x - 480) < 50}\nvertical ok: {abs(offset_y - 235) < 50}")
 
         # Fly through gate only when both x and y are centered
-        if abs(offset_x - 480) < 30 and abs(offset_y - 235) < 50:
+        if abs(offset_x - 480) < 30 and abs(offset_y - 235) < 35:
             if self.centered_ticks >= 2:
                 self.state = States.GATE_FLYTHROUGH
         else:
@@ -253,7 +258,7 @@ class DroneController(Node):
         # Check if close
         if self.gate.size > 500 and self.gate_counter != 2 and self.gate_counter != 1:
             self.state = States.CENTERING_CLOSE
-        elif self.gate.size > 450 and (self.gate_counter == 2 or self.gate_counter == 1):
+        elif self.gate.size > 440 and (self.gate_counter == 2 or self.gate_counter == 1):
             self.state = States.CENTERING_CLOSE
 
         #0,0 is upper left
@@ -274,6 +279,9 @@ class DroneController(Node):
         rotation = self.pid_rotation(offset_x) # Rotation
         forward = 0.0
 
+        if self.gate_counter == 3:
+            z = 0.0
+
         self.get_logger().info(f"pid sides={rotation:.3f}, pid altitude={z:.3f}, tof={self.tof}, Offset_y={offset_y}, Offset_x={offset_x}")
 
         # Move if rotated towards
@@ -284,7 +292,7 @@ class DroneController(Node):
             match self.gate_counter:
                 case 0: forward = 0.3
                 case 1: forward = 0.3
-                case 2: forward = 0.2
+                case 2: forward = 0.1
                 case 3: forward = 0.3
 
         # Actual movement
@@ -301,7 +309,7 @@ class DroneController(Node):
         match self.gate_counter:
             case 0: fly_time = 70
             case 1: fly_time = 45
-            case 2: fly_time = 50
+            case 2: fly_time = 45
             case 3: fly_time = 35
 
         
@@ -317,6 +325,10 @@ class DroneController(Node):
     def stopping(self):
         self.get_logger().info("State: Stopping")
         offset_y = self.tof - 30
+        self.stop_lose_timer += 1
+
+        if self.stop_lose_timer >= self.stop_max_lose_time:
+            self.stop = None
 
         z = self.pid_altitude_tof(offset_y) # Up / Down
         self.get_logger().info(f"TOF with offset = {offset_y}")
