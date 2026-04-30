@@ -21,4 +21,5 @@ rename repo to "src"
 To visualize the yolo gate detection you can use Rviz2 to display the yolo detections
 - ros2 run rviz2 rviz2
 - Add Image from /yolo/dbg_image
+
 Note: Rviz2 may cause dropped frames
