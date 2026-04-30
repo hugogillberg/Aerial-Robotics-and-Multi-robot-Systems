@@ -4,7 +4,7 @@
 ## Clone repo in here:
 /ros2_ws/
 
-rename repo to "src"
+rename cloned folder to "src"
 
 ## How to run:
 - Open 4 terminals
