@@ -23,3 +23,8 @@ To visualize the yolo gate detection you can use Rviz2 to display the yolo detec
 - Add Image from /yolo/dbg_image
 
 Note: Rviz2 may cause dropped frames
+
+
+
+
+https://docs.google.com/document/d/1uxUaTbAPHDvPYgQyUM8kqddHJv-b2u44QmtcUymiOME/edit?usp=sharing
