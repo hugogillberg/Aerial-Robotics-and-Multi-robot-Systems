@@ -74,8 +74,8 @@ class DroneController(Node):
         self.stop_max_lose_time: int = 30
 
         # PID controller
-        self.pid_altitude_gate = PID(0.002, 0.0, 0.0, setpoint=235, output_limits=(-1.0, 1.0))
-        self.pid_altitude_tof = PID(0.02, 0.0, 0.0, setpoint=110, output_limits=(-1.0, 1.0))
+        self.pid_altitude_gate = PID(0.003, 0.0, 0.0, setpoint=235, output_limits=(-1.0, 1.0))
+        self.pid_altitude_tof = PID(0.025, 0.0, 0.0, setpoint=110, output_limits=(-1.0, 1.0))
         self.pid_rotation = PID(0.0015, 0.0, 0.0, setpoint=480, output_limits=(-1.0, 1.0))
 
         
@@ -132,9 +132,9 @@ class DroneController(Node):
     
     
     def land(self):
-        self.move()
+        self.move(up=-1)
         time.sleep(1.0)
-        self.send_command("land")
+        self.send_command("emergency")
         self.landing = True
 
     def takeoff(self):
@@ -186,6 +186,7 @@ class DroneController(Node):
     ##################################################################################################################
     def handle_state_machine(self):
         if self.previous_state != self.state:
+            self.move()
             self.centered_x = False
             self.flythrough_time = 0
             self.centered_ticks = 0
@@ -244,7 +245,7 @@ class DroneController(Node):
 
         # Fly through gate only when both x and y are centered
         if abs(offset_x - 480) < 30 and abs(offset_y - 235) < 35:
-            if self.centered_ticks >= 2:
+            if self.centered_ticks >= 1:
                 self.state = States.GATE_FLYTHROUGH
         else:
             self.centered_ticks = 0
@@ -270,6 +271,9 @@ class DroneController(Node):
         offset_x = self.gate.x #(self.gate.x - (camera_size_x / 2)) / (camera_size_x / 2)
         offset_y = self.tof #-(110.0 - float(self.tof)) / 110.0
         
+        if self.gate_counter == 2:
+            offset_y -= 20
+
         self.gate_timer += 1
         if self.gate_timer >= self.gate_max_lose_time:
             self.state = States.SEARCHING
@@ -290,10 +294,10 @@ class DroneController(Node):
 
             self.centered_x = True
             match self.gate_counter:
-                case 0: forward = 0.3
+                case 0: forward = 0.4
                 case 1: forward = 0.3
-                case 2: forward = 0.1
-                case 3: forward = 0.3
+                case 2: forward = 0.35
+                case 3: forward = 0.1
 
         # Actual movement
         self.move(forward, 0.0, z, rotation)
@@ -307,10 +311,10 @@ class DroneController(Node):
         fly_time: int = 0
 
         match self.gate_counter:
-            case 0: fly_time = 70
+            case 0: fly_time = 65
             case 1: fly_time = 45
-            case 2: fly_time = 45
-            case 3: fly_time = 35
+            case 2: fly_time = 38
+            case 3: fly_time = 42
 
         
         if self.flythrough_time >= fly_time:
@@ -340,9 +344,9 @@ class DroneController(Node):
             self.get_logger().info("State: Rotating to stop")
             offset_x = self.stop.x
             rotation = self.pid_rotation(offset_x) # Rotation
-            self.move(rotation=rotation, forward=0.1, up=z)
+            self.move(rotation=rotation, forward=0.2, up=z)
         
-        if self.stop is not None and self.stop.size > 200:
+        if self.stop is not None and self.stop.size > 215:
             #STOP
             self.get_logger().info("State: Landing")
             self.move()
