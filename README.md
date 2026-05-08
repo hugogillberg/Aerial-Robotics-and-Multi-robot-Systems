@@ -16,6 +16,7 @@ rename cloned folder to "src"
 - Terminal 3: ros2 run drone_racing gate_analyzer
 - Terminal 4: ros2 run drone_racing drone_controller
 
+Note: Nvidia GPU highly recommended to run YOLO model, results without GPU will be very bad!
 
 ## Gate detection visualization:
 To visualize the yolo gate detection you can use Rviz2 to display the yolo detections
